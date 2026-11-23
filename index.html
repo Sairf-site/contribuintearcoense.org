@@ -122,14 +122,14 @@ details.grupo[open]>summary::after{content:"Fechar ▴"}
 .salario .eti2{margin-top:28px}
 .aovivo.laranja{background:#ff8a1f;color:#14110f}.aovivo.laranja i{background:#14110f}
 .laranja-txt{color:#ff8a1f}
-.diarias{margin-top:30px;padding-top:20px;border-top:1px solid rgba(255,255,255,.18);max-width:760px}
-.lista-diarias{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
-.lista-diarias li{display:grid;grid-template-columns:110px minmax(0,1fr) 112px;gap:12px;align-items:center;font-size:15px}
-.lista-diarias .barra-d{height:12px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
-.lista-diarias .barra-d span{display:block;height:100%;background:#ff8a1f;border-radius:3px}
-.lista-diarias b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.lista-diarias .zero{opacity:.6}
-@media(max-width:600px){.lista-diarias li{grid-template-columns:86px minmax(0,1fr) 96px;font-size:14px}}
+.diarias-linha{background:var(--panel);border-bottom:1px solid var(--line);padding:12px max(5vw,16px)}
+.linha-d{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px}
+.linha-d h2{margin:0;font:600 15px Inter,sans-serif}
+.linha-d label{font-size:14px;color:var(--soft);display:flex;align-items:center;gap:8px}
+.linha-d select{font:14px Inter,sans-serif;min-height:36px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.linha-d p{margin:0;font-size:14.5px}
+.linha-d p b{font-variant-numeric:tabular-nums}
+.linha-d p span{color:var(--soft);font-size:13.5px}
 .aviso{border:2px solid #ff8a1f;background:color-mix(in srgb,#ff8a1f 10%,var(--bg));border-radius:10px;padding:16px 18px;margin:0 0 24px;max-width:78ch}
 .aviso b{display:block;margin-bottom:4px}
 .busca{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:0 0 18px}
@@ -171,10 +171,13 @@ table.pauta{font-size:13.5px}.stack thead{display:none}.stack tr{display:grid;pa
     <p class="valor"><span id="contador" aria-live="off">R$ 0,00</span></p>
     <p class="eti eti2"><span class="aovivo laranja"><i aria-hidden="true"></i>Ao vivo</span> Todas as despesas da Câmara Municipal desde a posse</p>
     <p class="valor laranja-txt"><span id="contador-despesas" aria-live="off">R$ 0,00</span></p>
-    <div class="diarias">
-      <p class="eti">Diárias pagas a cada vereador desde a posse</p>
-      <ul id="lista-diarias" class="lista-diarias"></ul>
-    </div>
+  </div>
+</section>
+<section class="diarias-linha" aria-label="Diárias dos vereadores">
+  <div class="wrap linha-d">
+    <h2>Diárias dos vereadores</h2>
+    <label for="dv">Vereador <select id="dv"><option value="">Todos</option></select></label>
+    <p id="dv-res" aria-live="polite"></p>
   </div>
 </section>
 <nav class="vistas band" aria-label="Seções"><a href="#semana" id="v-semana">Semana a semana</a><a href="#propostas" id="v-prop">Propostas por tipo</a><a href="#ruas" id="v-ruas">Por rua ou bairro</a></nav>
@@ -418,8 +421,12 @@ const ritmo2026=DESPESAS.pago2026/((DESPESAS.ate-inicioAno(2026))/1000); // R$ p
 function despesasAte(ms){return DESPESAS.pago2025+DESPESAS.pago2026+Math.max(0,(ms-DESPESAS.ate)/1000)*ritmo2026}
 // Diárias pagas a vereadores (portal da transparência, Diárias/Passagens/Adiantamento de Viagem)
 const DIARIAS=[['Carlos',5588.87,7650],['Queijinho',5461.97,5150],['Didier',4128,2950],['Genorinho',3359.65,2950],['Leslie',924.26,3500],['Jaiane',1750,0],['Orlando',915.77,500],['Joãozinho',1159.65,250],['Kátia',0,0]];
-{const tot=DIARIAS.map(([n,a,b])=>[n,a+b]).sort((x,y)=>y[1]-x[1]),max=tot[0][1];
- $('#lista-diarias').innerHTML=tot.map(([n,v])=>`<li class="${v?'':'zero'}"><span>${esc(n)}</span><span class="barra-d"><span style="width:${(100*v/max).toFixed(1)}%"></span></span><b>${brl.format(v)}</b></li>`).join('');}
+{const sel=$('#dv'),res=$('#dv-res'),ord=[...DIARIAS].sort((x,y)=>(y[1]+y[2])-(x[1]+x[2]));
+ sel.insertAdjacentHTML('beforeend',ord.map(([n])=>`<option>${esc(n)}</option>`).join(''));
+ const mostra=()=>{const v=sel.value;const lin=v?DIARIAS.filter(d=>d[0]===v):DIARIAS;const a=lin.reduce((t,d)=>t+d[1],0),b=lin.reduce((t,d)=>t+d[2],0);
+  const pos=v?ord.findIndex(d=>d[0]===v)+1:0;
+  res.innerHTML=`<b>${brl.format(a+b)}</b> ${v?'pagos a '+esc(v):'pagos aos 9 vereadores'} desde a posse <span>(2025: ${brl.format(a)} · 2026 até 21/11: ${brl.format(b)}${v?` · ${pos}º de 9`:''})</span>`;};
+ sel.addEventListener('change',mostra);mostra();}
 const tiqueOriginal=tique;
 tique=function(){tiqueOriginal();$('#contador-despesas').textContent=brl.format(despesasAte(Date.now()));};
 tique();const relogio=setInterval(tique,1000);

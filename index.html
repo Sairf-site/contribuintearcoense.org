@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contribuinte Arcoense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: sóbrio e verificável, como uma boa editoria de dados de jornal; cada fato aponta para o SAPL.
+   IDEA: a ata semanal da Câmara, reimpressa como página de jornal com o painel de votação no alto.
+   PICTURE: a matriz de votos da sessão — matérias nas linhas, os 9 vereadores nas colunas.
+   COLOUR and TYPE: branco, tinta #14110f, ultramarino #1d2bd8 para Sim, vermelho #c8102e para Não; Spectral + Inter.
+   LAYOUT: faixa de semanas no topo, sessão escolhida em destaque, pauta completa abaixo, próxima sessão ao lado. */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0d0e18);--ink:light-dark(#14110f,#ecebf3);--soft:light-dark(#5d5f6b,#a3a5b5);
+--line:light-dark(#dfe0e6,#262838);--panel:light-dark(#f4f5f8,#151726);
+--sim:light-dark(#1d2bd8,#6d7bff);--nao:light-dark(#c8102e,#ff5a70);--abs:light-dark(#8a8c99,#7d8094);--acc:var(--sim)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}[hidden]{display:none!important}.scroll{overflow-x:auto}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Spectral,Georgia,serif;font-weight:500;line-height:1.08;text-wrap:balance;margin:0}
+h1{font-size:clamp(32px,5vw,50px)}h2{font-size:clamp(26px,3.4vw,36px)}h3{font-size:20px}
+a{color:var(--acc)}
+.band{padding:clamp(24px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+.muted{color:var(--soft)}.small{font-size:13.5px}
+header.band{padding-bottom:16px;border-bottom:1px solid var(--line)}
+.top{display:flex;flex-wrap:wrap;gap:12px 32px;align-items:end;justify-content:space-between}
+.top p{margin:8px 0 0;max-width:62ch}
+.filtro{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--soft)}
+select{font:16px Inter,sans-serif;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+select:focus-visible,a:focus-visible,button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.semanas{display:flex;gap:6px;overflow-x:auto;padding:14px max(5vw,16px);border-bottom:1px solid var(--line);scrollbar-width:thin}
+.semanas a{flex:none;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-size:14px;white-space:nowrap;min-height:44px;display:flex;align-items:center;gap:6px}
+.semanas a[aria-current]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.semanas a.prox{border-style:dashed}
+.cab{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 28px;align-items:end}
+.cab .links{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--line);text-decoration:none;color:var(--ink);font-size:14.5px;font-weight:500;background:var(--bg)}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:24px 0}
+.nums div{background:var(--bg);padding:14px 16px}.nums b{display:block;font:500 clamp(26px,3.6vw,34px)/1.1 Spectral,serif}
+.nums span{font-size:13.5px;color:var(--soft)}
+.pres{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0;list-style:none}
+.pres li{font-size:14px;padding:5px 10px;border-radius:6px;background:var(--panel)}
+.pres li.aus{background:transparent;border:1px dashed var(--nao);color:var(--nao)}
+.grade{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:clamp(20px,3vw,40px);align-items:start}
+.matriz{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.matriz table{border-collapse:collapse;width:100%;font-size:14px}
+.matriz th,.matriz td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:center}
+.matriz thead th{font-weight:500;font-size:12.5px;color:var(--soft);writing-mode:vertical-rl;transform:rotate(180deg);height:96px;vertical-align:bottom;padding:8px 4px}
+.matriz thead th.hl,.matriz td.hl{background:color-mix(in srgb,var(--acc) 10%,transparent)}
+.matriz th.m{text-align:left;writing-mode:horizontal-tb;transform:none;font-weight:400;color:var(--ink);font-size:14px;min-width:200px;max-width:330px;padding-left:12px}
+.matriz th.m small{display:block;color:var(--soft);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:5px;font-size:12px;font-weight:600}
+.v.S{background:var(--sim);color:#fff}.v.N{background:var(--nao);color:#fff}
+.v.A{background:var(--abs);color:#fff}.v.x{border:1px solid var(--line);color:var(--soft);font-weight:400}
+tr.div th.m{box-shadow:inset 3px 0 var(--nao)}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;color:var(--soft);margin:10px 2px 0}
+.leg span{display:inline-flex;gap:6px;align-items:center}.leg .v{width:18px;height:18px;font-size:10px}
+.resumo{border-left:3px solid var(--acc);padding:4px 0 4px 18px}
+.resumo .selo{font-size:13px;color:var(--soft)}
+.resumo p{margin:10px 0}
+aside .card{border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:20px}
+aside ol{padding-left:20px;margin:10px 0 0}aside li{margin-bottom:8px;font-size:15px}
+.pauta{width:100%;border-collapse:collapse;font-size:15px}
+.pauta th{text-align:left;font-weight:500;font-size:13.5px;color:var(--soft);border-bottom:1px solid var(--ink);padding:8px}
+.pauta td{border-bottom:1px solid var(--line);padding:10px 8px;vertical-align:top}
+.pauta td.r{white-space:nowrap}.pauta .em{color:var(--soft);font-size:14px;display:block;margin-top:2px}
+.res{font-weight:600}.res.Aprovada{color:var(--sim)}.res.Rejeitada{color:var(--nao)}
+.meu{font-size:13.5px;margin-top:4px}
+.vazio{padding:28px;border:1px dashed var(--line);border-radius:10px;color:var(--soft)}
+footer{border-top:1px solid var(--line);font-size:13.5px;color:var(--soft)}
+.vistas{display:flex;gap:4px;padding-top:0;padding-bottom:0;border-bottom:1px solid var(--line)}
+.vistas a{padding:12px 14px;min-height:44px;text-decoration:none;color:var(--soft);font-weight:500;border-bottom:3px solid transparent;margin-bottom:-1px}
+.vistas a[aria-current]{color:var(--ink);border-color:var(--acc)}
+.filtros{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;margin:0 0 24px}
+.filtros input{font:16px Inter,sans-serif;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:min(320px,100%)}
+.barra{display:flex;height:46px;border-radius:8px;overflow:hidden;margin:8px 0 10px}
+.barra a{display:block;height:100%}
+.g-bairros{--g:#1d8a6b}.g-perguntas{--g:#1d2bd8}.g-homenagens{--g:#c77d00}.g-leis{--g:#6a3fb5}.g-outros{--g:#8a8c99}
+.barra a{background:var(--g)}
+.chaves{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin-bottom:28px}
+.chaves span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--g);margin-right:6px;vertical-align:-1px}
+details.grupo{border:1px solid var(--line);border-left:6px solid var(--g);border-radius:10px;margin-bottom:12px;background:var(--bg)}
+details.grupo>summary{cursor:pointer;list-style:none;padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center;min-height:44px}
+details.grupo>summary::-webkit-details-marker{display:none}
+details.grupo>summary h3{font-size:22px}
+details.grupo>summary .n{font:500 26px/1 Spectral,serif}
+details.grupo>summary p{grid-column:1/-1;margin:0;color:var(--soft);font-size:14.5px}
+details.grupo>summary::after{content:"Abrir ▾";grid-column:1/-1;font-size:13.5px;color:var(--acc);font-weight:500}
+details.grupo[open]>summary::after{content:"Fechar ▴"}
+.subs{padding:0 18px 12px}
+.sub h4{font:600 15px Inter,sans-serif;margin:18px 0 6px;display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.lista{list-style:none;margin:0;padding:0}
+.lista li{padding:10px 0;border-bottom:1px solid var(--line)}
+.lista li:last-child{border-bottom:0}
+.lista .meta{font-size:13.5px;color:var(--soft);display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:3px}
+.lista .por{font-size:13px;color:var(--soft)}
+.mais{margin:10px 0 0;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:500 14.5px Inter,sans-serif;cursor:pointer}
+.comp{width:100%;border-collapse:collapse;font-size:14.5px}
+.comp th,.comp td{padding:8px;border-bottom:1px solid var(--line);text-align:right}
+.comp th:first-child,.comp td:first-child{text-align:left}
+.comp thead th{font-weight:500;font-size:13px;color:var(--soft);border-bottom:1px solid var(--ink)}
+.comp button{background:none;border:0;padding:0;color:var(--acc);font:inherit;cursor:pointer;text-decoration:underline;min-height:32px}
+.regra ol{padding-left:22px}.regra li{margin-bottom:10px}
+.regra code{background:var(--panel);padding:1px 5px;border-radius:4px;font-size:14px}
+.salario{background:var(--ink);color:var(--bg);padding:clamp(22px,3vw,40px) max(5vw,16px)}
+.salario .eti{margin:0;font-size:15px;font-weight:600;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.aovivo{display:inline-flex;align-items:center;gap:6px;background:#c8102e;color:#fff;font-size:12.5px;font-weight:600;padding:3px 9px;border-radius:999px}
+.aovivo i{width:7px;height:7px;border-radius:50%;background:#fff}
+@media(prefers-reduced-motion:no-preference){.aovivo i{animation:pisca 1.4s ease-in-out infinite}@keyframes pisca{50%{opacity:.25}}}
+.salario .valor{margin:6px 0 0;font:500 clamp(46px,8.5vw,96px)/1 Spectral,Georgia,serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.salario .sub{margin:10px 0 0;font-size:16px;opacity:.9}
+.salario .base{margin:6px 0 0;font-size:14px;opacity:.75;max-width:70ch}
+.salario .fonte{margin:16px auto 0;font-size:13px;opacity:.7}
+.salario a{color:inherit}
+.salario .eti2{margin-top:28px}
+.aovivo.laranja{background:#ff8a1f;color:#14110f}.aovivo.laranja i{background:#14110f}
+.laranja-txt{color:#ff8a1f}
+.diarias{margin-top:30px;padding-top:20px;border-top:1px solid rgba(255,255,255,.18);max-width:760px}
+.lista-diarias{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.lista-diarias li{display:grid;grid-template-columns:110px minmax(0,1fr) 112px;gap:12px;align-items:center;font-size:15px}
+.lista-diarias .barra-d{height:12px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
+.lista-diarias .barra-d span{display:block;height:100%;background:#ff8a1f;border-radius:3px}
+.lista-diarias b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lista-diarias .zero{opacity:.6}
+@media(max-width:600px){.lista-diarias li{grid-template-columns:86px minmax(0,1fr) 96px;font-size:14px}}
+.aviso{border:2px solid #ff8a1f;background:color-mix(in srgb,#ff8a1f 10%,var(--bg));border-radius:10px;padding:16px 18px;margin:0 0 24px;max-width:78ch}
+.aviso b{display:block;margin-bottom:4px}
+.busca{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:0 0 18px}
+.busca input{font:16px Inter,sans-serif;min-height:48px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:min(460px,100%)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 28px}
+.chips button{min-height:40px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink);font:14px Inter,sans-serif;cursor:pointer}
+.chips button b{font-weight:600;color:var(--soft);margin-left:4px}
+.lugar{border-top:2px solid var(--ink);padding-top:14px;margin-top:28px}
+.rep{border:1px solid var(--line);border-left:6px solid #ff8a1f;border-radius:10px;margin:10px 0}
+.rep>summary{cursor:pointer;list-style:none;padding:12px 16px;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;min-height:44px}
+.rep>summary::-webkit-details-marker{display:none}
+.rep .n{font:500 26px/1 Spectral,serif;color:#c25a00}
+.rep .datas{font-size:13.5px;color:var(--soft)}
+.rep ol{margin:0;padding:0 16px 12px 36px}.rep li{margin:6px 0;font-size:14.5px}
+.tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:999px;background:var(--panel);color:var(--soft);margin-left:6px}
+@media(max-width:900px){.grade{grid-template-columns:minmax(0,1fr)}.cab{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+table.pauta{font-size:13.5px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:6.5em;margin-inline-start:-7em;color:var(--soft);white-space:normal}.stack td:empty{display:none}
+.matriz th.m{min-width:120px;max-width:150px}.matriz th.m small{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
+@media(prefers-reduced-motion:no-preference){main{animation:in .35s ease-out}@keyframes in{from{opacity:0;transform:translateY(6px)}}}
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="wrap top">
+    <div>
+      <h1>Contribuinte Arcoense</h1>
+      <p class="muted">Projeto independente, sem ligação com a Câmara. Presença, decisões, gastos e o voto de cada vereador de Arcos, a partir dos dados oficiais da Câmara Municipal e do portal da transparência. <span id="atualizado"></span></p>
+    </div>
+    <label class="filtro" for="ver" id="filtro-ver">Destacar um vereador
+      <select id="ver"><option value="">Todos</option></select>
+    </label>
+  </div>
+</header>
+<section class="salario" aria-label="Salário pago aos vereadores">
+  <div class="wrap">
+    <p class="eti"><span class="aovivo"><i aria-hidden="true"></i>Ao vivo</span> Salário pago aos 9 vereadores desde a posse, com 13º e férias</p>
+    <p class="valor"><span id="contador" aria-live="off">R$ 0,00</span></p>
+    <p class="eti eti2"><span class="aovivo laranja"><i aria-hidden="true"></i>Ao vivo</span> Todas as despesas da Câmara Municipal desde a posse</p>
+    <p class="valor laranja-txt"><span id="contador-despesas" aria-live="off">R$ 0,00</span></p>
+    <div class="diarias">
+      <p class="eti">Diárias pagas a cada vereador desde a posse</p>
+      <ul id="lista-diarias" class="lista-diarias"></ul>
+    </div>
+  </div>
+</section>
+<nav class="vistas band" aria-label="Seções"><a href="#semana" id="v-semana">Semana a semana</a><a href="#propostas" id="v-prop">Propostas por tipo</a><a href="#ruas" id="v-ruas">Por rua ou bairro</a></nav>
+<nav class="semanas" id="semanas" aria-label="Sessões"></nav>
+<main id="main" class="band"><div class="wrap"><p class="muted">Carregando dados da Câmara…</p></div></main>
+<footer class="band"><div class="wrap">
+  Fonte: <a href="https://sapl.arcos.mg.leg.br/">SAPL — Câmara Municipal de Arcos</a>. Contador de salário: estimativa de 9 vereadores × (12 salários + 13º + 1/3 de férias) por ano desde 1º/1/2025, com subsídio de R$ 5.740,52 em 2025 (<a href="https://sapl.arcos.mg.leg.br/media/sapl/public/normajuridica/2023/3434/resolucao_901.pdf">Resolução 901/2023</a>) e R$ 5.964,40 em 2026 (<a href="https://sapl.arcos.mg.leg.br/media/sapl/public/normajuridica/2026/4726/resolucao_916.pdf">Resolução 916/2026</a>), repartido por igual a cada segundo do ano; não considera descontos por faltas. O valor efetivamente pago a cada vereador aparece no portal de transparência da Câmara. Contador de despesas: total pago pela Câmara Municipal (unidade gestora Câmara, despesa orçamentária) no <a href="https://webapp1-arcos.cidade360.cloud/pronimtb/">portal da transparência de Arcos</a>: R$ 4.522.956,66 em 2025 e R$ 4.448.474,66 em 2026 até 21/11/2026; depois dessa data o contador avança pela média diária de 2026 até a próxima atualização. Diárias: valores pagos a cada vereador no mesmo portal (Despesas › Diárias/Passagens/Adiantamento de Viagem), em 2025 e em 2026 até 21/11; nenhum vereador recebeu passagens ou adiantamento de viagem no período, e não há outros pagamentos da Câmara em nome de vereadores além das diárias (dados em Creative Commons 4.0, Atribuição-CompartilhaIgual). “Não votou” costuma ser o presidente da sessão, que só vota para desempatar. O SAPL não registra justificativas de ausência. Resumos de vídeo, quando houver, são gerados das legendas automáticas da transmissão e não substituem a ata.
+</div></footer>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const dLonga=d=>{const [a,m,dd]=d.split('-');return `${+dd} de ${['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][m-1]} de ${a}`};
+const dCurta=d=>{const [a,m,dd]=d.split('-');return `${+dd} ${MES[m-1]} ${a.slice(2)}`};
+const NOME={S:'Sim',N:'Não',A:'Abstenção','-':'Não votou'};
+let D,R={},ver='';
+try{ver=localStorage.getItem('ver')||''}catch(e){}
+
+function curto(i){return (i.sigla||'')+' '+(i.materia.match(/nº\s*(.+)$/)||[,''])[1]}
+
+function matriz(s){
+  const vs=s.itens.filter(i=>i.votos&&Object.keys(i.votos).length);
+  if(!vs.length) return `<div class="vazio">Nenhuma votação nominal registrada nesta sessão.</div>`;
+  const div=i=>{const v=Object.values(i.votos).filter(x=>x!=='-');return new Set(v).size>1};
+  vs.sort((a,b)=>div(b)-div(a));
+  const head=D.vereadores.map(n=>`<th scope="col" class="${n===ver?'hl':''}">${esc(n)}</th>`).join('');
+  const rows=vs.map(i=>`<tr class="${div(i)?'div':''}"><th scope="row" class="m">${esc(curto(i))} <span class="res ${esc(i.resultado)}">· ${esc(i.resultado)}</span><small title="${esc(i.ementa)}">${esc(i.ementa)}</small></th>${
+    D.vereadores.map(n=>{const v=i.votos[n];return `<td class="${n===ver?'hl':''}">${v?`<span class="v ${v==='-'?'x':v}" title="${esc(n)}: ${NOME[v]||v}">${v==='-'?'–':v}</span>`:'<span class="muted small">aus.</span>'}</td>`}).join('')}</tr>`).join('');
+  return `<div class="matriz"><table><thead><tr><th class="m" scope="col">Matéria votada</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="leg"><span><i class="v S">S</i>Sim</span><span><i class="v N">N</i>Não</span><span><i class="v A">A</i>Abstenção</span><span><i class="v x">–</i>Não votou</span><span>Linha marcada em vermelho: votação dividida</span></div>`;
+}
+
+function resumo(s){
+  const r=R[s.id];
+  const seg=t=>t.split(':').reduce((a,x)=>a*60+(+x||0),0);
+  const noVideo=t=>s.video?`${s.video}${s.video.includes('?')?'&':'?'}t=${seg(t)}s`:'';
+  if(r) return `<div class="resumo"><div class="selo">Resumo do que foi dito na reunião, feito a partir da ${esc(r.fonte||'transcrição automática do YouTube')}. Não é registro oficial: as decisões e os votos oficiais estão acima.${r.gerado_em?' · '+r.gerado_em.split('-').reverse().join('/'):''}</div>${r.texto.split(/\n\n+/).map(p=>`<p>${esc(p)}</p>`).join('')}${r.pontos?.length?`<h4 style="margin:16px 0 4px;font:600 15px Inter,sans-serif">Momentos no vídeo</h4><ul>${r.pontos.map(p=>`<li>${p.t?(s.video?`<a href="${esc(noVideo(p.t))}"><b>${esc(p.t)}</b></a> `:`<b>${esc(p.t)}</b> `):''}${esc(p.texto)}</li>`).join('')}</ul>`:''}</div>`;
+  if(!s.realizada) return '';
+  return `<div class="resumo"><div class="selo">Resumo da discussão</div><p class="muted">Ainda não há resumo do que foi dito nesta reunião.${s.video?` <a href="${esc(s.video)}">Assista à gravação no YouTube</a>.`:''}</p></div>`;
+}
+
+function pauta(s){
+  if(!s.itens.length) return `<div class="vazio">Pauta ainda não publicada no SAPL.</div>`;
+  return `<table class="pauta stack"><thead><tr><th>Fase</th><th>Matéria</th><th>Autoria</th><th>Resultado</th></tr></thead><tbody>${
+    s.itens.map(i=>{const mv=ver&&i.votos?i.votos[ver]:null;
+    return `<tr><td>${esc(i.fase)}</td><td><a href="${esc(i.url)}">${esc(i.materia)}</a><span class="em">${esc(i.ementa)}</span></td><td>${esc(i.autores)}</td><td class="r"><span class="res ${esc(i.resultado)}">${esc(i.resultado||'—')}</span>${i.placar?`<div class="small muted">${i.placar[0]} sim · ${i.placar[1]} não · ${i.placar[2]} abst.</div>`:''}${ver&&i.votos?`<div class="meu">${esc(ver)}: <b>${mv?NOME[mv]:'ausente'}</b></div>`:''}</td></tr>`}).join('')}</tbody></table>`;
+}
+
+function render(){
+  const prop=location.hash.startsWith('#propostas')||location.hash==='#regra', ruas=location.hash==='#ruas';
+  $('#semanas').hidden=prop||ruas;$('#filtro-ver').hidden=prop||ruas;
+  $('#v-prop').toggleAttribute('aria-current',prop);$('#v-ruas').toggleAttribute('aria-current',ruas);$('#v-semana').toggleAttribute('aria-current',!prop&&!ruas);
+  if(ruas){ if(LC) renderRuas(); else $('#main').innerHTML='<div class="wrap vazio">Não foi possível carregar os pedidos por lugar.</div>'; return; }
+  if(prop){ if(PR) renderPropostas(); else $('#main').innerHTML='<div class="wrap vazio">Não foi possível carregar as propostas.</div>'; if(location.hash==='#regra') setTimeout(()=>$('#regra')?.scrollIntoView(),0); return; }
+  const id=+(location.hash.match(/^#sessao-(\d+)$/)||[])[1];
+  const real=D.sessoes.filter(s=>s.realizada);
+  const s=D.sessoes.find(x=>x.id===id)||real[0];
+  const prox=D.sessoes.filter(x=>!x.realizada).at(-1);
+  document.querySelectorAll('#semanas a').forEach(a=>a.toggleAttribute('aria-current',+a.dataset.id===s.id));
+  const vot=s.itens.filter(i=>i.placar);
+  const apr=vot.filter(i=>i.resultado==='Aprovada').length, rej=vot.filter(i=>i.resultado==='Rejeitada').length;
+  const divid=vot.filter(i=>i.placar[1]||i.placar[2]).length;
+  const meus=ver?vot.filter(i=>i.votos&&i.votos[ver]):[];
+  const contraMaioria=ver?meus.filter(i=>{const v=i.votos[ver];const maj=i.placar[0]>=i.placar[1]?'S':'N';return (v==='S'||v==='N')&&v!==maj}):[];
+  $('#main').innerHTML=`<div class="wrap">
+  <div class="cab"><div><p class="muted small" style="margin:0 0 6px">${esc(s.tipo)} · ${s.realizada?'reunião realizada':'próxima reunião'}</p>
+  <h2>${dLonga(s.data)}</h2><p class="muted" style="margin:8px 0 0">${esc(s.nome)}</p></div>
+  <div class="links">${s.video?`<a class="btn pri" href="${esc(s.video)}">Vídeo no YouTube</a>`:''}${s.ata?`<a class="btn" href="${esc(s.ata)}">Ata (PDF)</a>`:''}<a class="btn" href="${esc(s.url)}">Sessão no SAPL</a></div></div>
+  ${s.realizada?`<div class="nums"><div><b>${s.presentes.length||'—'}<span class="muted" style="font-size:.5em"> / ${D.vereadores.length}</span></b><span>vereadores presentes</span></div><div><b>${vot.length}</b><span>votações</span></div><div><b>${apr}</b><span>aprovadas${rej?` · ${rej} rejeitada${rej>1?'s':''}`:''}</span></div><div><b>${divid}</b><span>com voto contrário ou abstenção</span></div></div>
+  ${s.presenca_registrada?`<ul class="pres" aria-label="Presença">${D.vereadores.map(n=>`<li class="${s.presentes.includes(n)?'':'aus'}">${esc(n)}${s.presentes.includes(n)?'':' · ausente'}</li>`).join('')}</ul>`:`<p class="muted">Presença não registrada no SAPL para esta sessão.</p>`}
+  ${ver?`<p style="margin:16px 0 0"><b>${esc(ver)}</b> ${s.presentes.includes(ver)?'esteve presente':'não consta como presente'}${meus.length?`, votou em ${meus.filter(i=>i.votos[ver]!=='-').length} de ${vot.length} votações`:''}${contraMaioria.length?` e votou contra a maioria em ${contraMaioria.length}: ${contraMaioria.map(i=>esc(curto(i))).join(', ')}`:''}.</p>`:''}`:''}
+  <div class="grade" style="margin-top:28px"><section>
+    ${s.realizada?`<h3 style="margin-bottom:12px">Como cada um votou</h3>${matriz(s)}<div style="margin-top:28px">${resumo(s)}</div>`:`<h3 style="margin-bottom:12px">Pauta publicada</h3><p class="muted">Matérias que a Câmara colocou para esta reunião.</p>`}
+  </section><aside>
+    ${prox&&prox.id!==s.id?`<div class="card"><p class="muted small" style="margin:0">Próxima reunião</p><h3 style="margin-top:4px"><a href="#sessao-${prox.id}">${dLonga(prox.data)}</a></h3><p class="small muted" style="margin:6px 0 0">${prox.itens.length} matérias na pauta</p><ol>${prox.itens.slice(0,5).map(i=>`<li>${esc(curto(i))} <span class="muted">— ${esc(i.ementa.slice(0,90))}${i.ementa.length>90?'…':''}</span></li>`).join('')}</ol></div>`:''}
+    <div class="card"><h3>Como ler</h3><p class="small" style="margin:8px 0 0">Os votos vêm do painel eletrônico registrado no SAPL. Leituras (“Matéria lida”) não são votadas. Votações divididas aparecem primeiro na tabela.</p></div>
+  </aside></div>
+  <h3 style="margin:36px 0 12px">Pauta completa (${s.itens.length} itens)</h3>${pauta(s)}
+  </div>`;
+}
+
+let PR=null,fAut='',fAno='',fBusca='';const LIMITE=40;const mostrando={};
+const DESC={bairros:'Obras, limpeza, iluminação, asfalto, praças, pontes e outros consertos pedidos para ruas e lugares da cidade.',
+perguntas:'Pedidos de informação, cópias de documentos, explicações e cobranças para que a Prefeitura cumpra leis e prazos.',
+homenagens:'Títulos de cidadão, moções honrosas e de aplausos, medalhas, nomes de ruas e lugares, e datas ou campanhas no calendário.',
+leis:'Projetos de lei, mudanças na Lei Orgânica, resoluções e sugestões de lei enviadas ao prefeito.',
+outros:'Emendas, vetos, contas da Prefeitura, moções de apoio ou repúdio e pedidos que não se encaixam nos grupos acima.'};
+const ORDEM=['bairros','perguntas','homenagens','leis','outros'];
+const fmtD=d=>d?d.split('-').reverse().join('/'):'';
+const norm=t=>t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+
+function filtradas(aut){
+  const a=aut??fAut,b=norm(fBusca.trim());
+  return PR.propostas.filter(p=>(!fAno||String(p.data).startsWith(fAno))
+    &&(!a||(a.startsWith('o:')?p.origem.includes(a.slice(2)):p.vereadores.includes(a)))
+    &&(!b||norm(p.ementa+' '+p.autores.join(' ')+' '+p.sigla+' '+p.numero).includes(b)));
+}
+
+function itemHTML(p){
+  return `<li><a href="${esc(p.url)}">${esc(p.tipo)} nº ${esc(p.numero)}/${esc(p.ano)}</a> — ${esc(p.ementa)}
+  <div class="meta"><span>${fmtD(p.data)}</span><span>${esc(p.autores.join('; ')||'Autor não registrado')}</span>${p.texto?`<a href="${esc(p.texto)}">texto (PDF)</a>`:''}</div>
+  <div class="por">Por que está aqui: <a href="#regra">regra ${p.regra}</a>, ${p.palavra.startsWith('tipo')?`pelo tipo oficial (${esc(p.tipo)})`:p.regra===9?'nenhuma das regras anteriores se aplicou':`pela palavra “${esc(p.palavra)}”`}</div></li>`;
+}
+
+function subHTML(g,sub,xs){
+  const k=g+'|'+sub,n=mostrando[k]||LIMITE;
+  return `<div class="sub"><h4><span>${esc(sub)}</span><span class="muted">${xs.length}</span></h4>
+  ${xs.length?`<ul class="lista">${xs.slice(0,n).map(itemHTML).join('')}</ul>${xs.length>n?`<button class="mais" data-k="${esc(k)}">Mostrar mais ${Math.min(LIMITE,xs.length-n)} de ${xs.length-n} restantes</button>`:''}`
+    :`<p class="muted small">${sub==='Pesar'?'Nenhum voto de pesar registrado no SAPL da Câmara de Arcos.':'Nenhuma proposta neste filtro.'}</p>`}</div>`;
+}
+
+function renderPropostas(){
+  const xs=filtradas(),tot=xs.length,abertos=new Set([...document.querySelectorAll('details.grupo[open]')].map(d=>d.dataset.g));
+  const por=g=>xs.filter(p=>p.grupo===g);
+  const subsDe=g=>[...new Set(PR.propostas.filter(p=>p.grupo===g).map(p=>p.sub))].sort((a,b)=>PR.propostas.filter(p=>p.sub===b).length-PR.propostas.filter(p=>p.sub===a).length);
+  const nomeAut=fAut?(fAut.startsWith('o:')?fAut.slice(2):fAut):'todos os autores';
+  const comp=(lista)=>lista.map(v=>{const ys=filtradas(v);return `<tr><td><button data-aut="${esc(v)}">${esc(v)}</button></td>${ORDEM.map(g=>`<td>${ys.filter(p=>p.grupo===g).length}</td>`).join('')}<td><b>${ys.length}</b></td></tr>`}).join('');
+  $('#main').innerHTML=`<div class="wrap">
+  <h2>O que cada um propõe, em grupos</h2>
+  <p class="muted" style="max-width:70ch">As ${PR.propostas.length.toLocaleString('pt-BR')} proposições registradas no SAPL (de agosto de 2023 até hoje) separadas em cinco grupos. A mesma regra vale para todos os autores: ela só olha o tipo oficial da proposição e o texto da ementa, nunca quem assinou. <a href="#regra">Veja a regra</a>.</p>
+  <div class="filtros">
+    <label class="filtro" for="f-aut">Autor<select id="f-aut"><option value="">Todos</option>
+      <optgroup label="Vereadores atuais (2025–2028)">${PR.vereadores20.map(v=>`<option${v===fAut?' selected':''}>${esc(v)}</option>`).join('')}</optgroup>
+      <optgroup label="Vereadores anteriores (2021–2024)">${PR.vereadores19.filter(v=>!PR.vereadores20.includes(v)).map(v=>`<option${v===fAut?' selected':''}>${esc(v)}</option>`).join('')}</optgroup>
+      <optgroup label="Outros autores">${['Prefeitura','Mesa, comissões e órgãos da Câmara'].map(o=>`<option value="o:${o}"${'o:'+o===fAut?' selected':''}>${o}</option>`).join('')}</optgroup></select></label>
+    <label class="filtro" for="f-ano">Ano<select id="f-ano"><option value="">Todos</option>${['2026','2025','2024','2023'].map(a=>`<option${a===fAno?' selected':''}>${a}</option>`).join('')}</select></label>
+    <label class="filtro" for="f-busca">Buscar na ementa<input id="f-busca" type="search" value="${esc(fBusca)}" placeholder="ex.: limpeza, Calciolândia"></label>
+  </div>
+  <p style="margin:0"><b>${tot.toLocaleString('pt-BR')}</b> proposições de <b>${esc(nomeAut)}</b>${fAno?` em ${fAno}`:''}${fBusca?` com “${esc(fBusca)}”`:''}</p>
+  <div class="barra" role="img" aria-label="Divisão por grupo">${ORDEM.map(g=>{const n=por(g).length;return n?`<a class="g-${g}" href="#propostas" data-abre="${g}" style="width:${100*n/tot}%" title="${esc(PR.grupos[g])}: ${n}"></a>`:''}).join('')}</div>
+  <div class="chaves">${ORDEM.map(g=>`<span class="g-${g}">${esc(PR.grupos[g])} · ${por(g).length} (${tot?Math.round(100*por(g).length/tot):0}%)</span>`).join('')}</div>
+  ${ORDEM.map(g=>{const ys=por(g);return `<details class="grupo g-${g}" data-g="${g}"${abertos.has(g)?' open':''}><summary><h3>${esc(PR.grupos[g])}</h3><span class="n">${ys.length}</span><p>${DESC[g]}</p></summary>
+    <div class="subs">${subsDe(g).map(sub=>subHTML(g,sub,ys.filter(p=>p.sub===sub))).join('')}</div></details>`}).join('')}
+  <h3 style="margin:40px 0 6px">Comparação entre vereadores</h3>
+  <p class="muted small" style="margin:0 0 12px">Mesma regra para todos. Conta autoria e coautoria${fAno?`, só em ${fAno}`:''}${fBusca?`, só com “${esc(fBusca)}”`:''}. Clique no nome para ver as propostas.</p>
+  <div class="scroll"><table class="comp"><thead><tr><th>Vereador</th><th>Melhorias nos bairros</th><th>Perguntas e cobranças</th><th>Homenagens</th><th>Propostas de lei</th><th>Outros</th><th>Total</th></tr></thead>
+  <tbody><tr><td colspan="7" class="muted small" style="text-align:left">Atuais (2025–2028)</td></tr>${comp(PR.vereadores20)}
+  <tr><td colspan="7" class="muted small" style="text-align:left">Anteriores (2021–2024; dados só a partir de agosto de 2023)</td></tr>${comp(PR.vereadores19.filter(v=>!PR.vereadores20.includes(v)))}</tbody></table></div>
+  <section class="regra" id="regra" style="margin-top:44px;max-width:78ch"><h3>A regra, passo a passo</h3>
+  <p>Cada proposição passa pelas perguntas abaixo, nesta ordem. A primeira que se aplica decide o grupo. A regra só usa o <b>tipo oficial</b> da proposição no SAPL e as <b>palavras da ementa</b>, sem acentos e sem diferença entre maiúsculas e minúsculas. Em cada proposta, a página mostra qual regra a classificou e por qual palavra.</p>
+  <ol>
+  <li><b>É emenda, veto ou redação final?</b> São etapas de outro projeto, então vão para <b>Outros</b>. As emendas impositivas, que destinam verba do orçamento, ficam num subgrupo próprio.</li>
+  <li><b>É requerimento ou indicação que pede informação?</b> A ementa começa com <code>Informações</code>, <code>Cópia</code>, <code>Esclarecimentos</code>, <code>Relação</code>, <code>Cronograma</code>, <code>Gastos</code>, <code>Cumprimento</code>, <code>Convocação</code>, <code>Ilegalidade</code> (e parecidas), ou contém <code>informações</code>, <code>esclarecimentos</code> ou <code>prestação de contas</code>. Vai para <b>Perguntas e cobranças</b>.</li>
+  <li><b>É homenagem?</b> Se a ementa fala em <code>pesar</code> ou <code>condolências</code>, é <b>pesar</b>. Se fala em <code>cidadão honorário</code>, é <b>título de cidadão</b>. Se fala em <code>denominação</code> de rua, praça ou prédio, é <b>nome de lugar</b>. Se fala em <code>moção honrosa</code>, <code>aplausos</code>, <code>honra ao mérito</code>, <code>medalha</code> ou <code>honraria</code>, é <b>parabéns e reconhecimento</b>. Se é projeto que institui <code>dia</code>, <code>semana</code>, <code>mês</code> ou <code>campanha</code>, é <b>data comemorativa</b>.</li>
+  <li><b>É moção de apoio, apelo ou repúdio?</b> É uma tomada de posição, não homenagem, e vai para <b>Outros</b>.</li>
+  <li><b>É projeto de lei, emenda à Lei Orgânica ou resolução?</b> Vai para <b>Propostas de lei</b>, separando orçamento e créditos, utilidade pública de entidades, e regras da Lei Orgânica e da Câmara.</li>
+  <li><b>É outro decreto legislativo</b>, como o julgamento das contas da Prefeitura? Vai para <b>Outros</b>.</li>
+  <li><b>É requerimento ou indicação que sugere uma lei?</b> A ementa fala em <code>projeto de lei</code>, <code>legislação</code>, <code>lei</code>, <code>regulamentação</code> ou <code>estatuto</code>. Vai para <b>Propostas de lei · sugestões ao prefeito</b>.</li>
+  <li><b>É requerimento ou indicação sobre um lugar ou serviço urbano?</b> A ementa cita <code>rua</code>, <code>bairro</code>, <code>praça</code>, <code>ponte</code>, <code>estrada</code>, <code>asfalto</code>, <code>limpeza</code>, <code>iluminação</code>, <code>esgoto</code>, <code>canaleta</code>, <code>quadra</code>, <code>lombada</code> e palavras parecidas. Vai para <b>Pedidos de melhoria nos bairros</b>.</li>
+  <li><b>Sobrou?</b> O restante dos requerimentos e indicações (salário de servidores, programas, compras, audiências públicas) vai para <b>Outros · outros pedidos à Prefeitura</b>.</li>
+  </ol>
+  <p class="muted small">Limites: uma regra por palavras pode errar em casos raros, por isso cada proposta mostra o motivo. A Câmara de Arcos não registra votos de pesar nem de parabéns no SAPL; as homenagens aparecem como títulos, moções e medalhas. Quatro registros de teste de 2013 (“treinamento de votação”) foram retirados.</p></section>
+  </div>`;
+}
+
+let LC=null,qRua='';
+const nrm=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+function pedidoHTML(q,chave){
+  const quem=q.vereadores.length?q.vereadores.join(', '):q.autores.join('; ');
+  const soTexto=chave&&!q.na_ementa.includes(chave);
+  return `<li><b>${fmtD(q.data)}</b> · <a href="${esc(q.url)}">${q.sigla==='IND'?'Indicação':'Requerimento'} ${esc(q.numero)}/${esc(q.ano)}</a> · ${esc(quem)} — ${esc(q.ementa)}<span class="tag">${esc(q.tipo)}</span>${soTexto?'<span class="tag">local citado só no texto</span>':''}${q.reitera?'<span class="tag">o texto diz que reitera pedido anterior</span>':''}${q.texto?` <a class="small" href="${esc(q.texto)}">PDF</a>`:''}</li>`;
+}
+function repHTML(r,P,aberto){
+  const anos=r.pedidos.map(i=>fmtD(P[i].data));
+  return `<details class="rep"${aberto?' open':''}><summary><span class="n">${r.vezes}×</span><b>${esc(r.tipo)}</b><span>${esc(r.nome)}</span><span class="datas">${anos.join(' · ')}</span></summary><ol>${r.pedidos.map(i=>pedidoHTML(P[i],r.local)).join('')}</ol></details>`;
+}
+function renderRuas(){
+  const P=Object.fromEntries(LC.pedidos.map(q=>[q.id,q])), nome=Object.fromEntries(LC.lugares.map(l=>[l.chave,l.nome]));
+  const q=nrm(qRua);
+  let corpo='';
+  if(q.length>=3){
+    const lugs=LC.lugares.filter(l=>nrm(l.nome).includes(q));
+    const chaves=new Set(lugs.map(l=>l.chave));
+    const soEmenta=LC.pedidos.filter(p=>!p.locais.some(k=>chaves.has(k))&&nrm(p.ementa).includes(q));
+    corpo=lugs.length||soEmenta.length?lugs.map(l=>{
+      const ps=LC.pedidos.filter(p=>p.locais.includes(l.chave)).sort((a,b)=>b.data.localeCompare(a.data));
+      const reps=LC.repeticoes.filter(r=>r.local===l.chave);
+      const quem={};ps.forEach(p=>(p.vereadores.length?p.vereadores:['outros autores']).forEach(v=>quem[v]=(quem[v]||0)+1));
+      return `<section class="lugar"><h3>${esc(l.nome)}</h3><p class="muted small" style="margin:4px 0 10px">${ps.length} pedido${ps.length>1?'s':''} · por quem: ${Object.entries(quem).sort((a,b)=>b[1]-a[1]).map(([v,n])=>`${esc(v)} (${n})`).join(', ')}</p>
+      ${reps.length?`<p style="margin:12px 0 4px"><b>Pedidos do mesmo tipo que voltaram para este lugar</b></p>${reps.map(r=>repHTML(r,P,false)).join('')}`:''}
+      <p style="margin:16px 0 4px"><b>Todos os pedidos para ${esc(l.nome)}</b></p><ol class="lista" style="padding-left:20px;list-style:decimal">${ps.map(p=>pedidoHTML(p,l.chave)).join('')}</ol></section>`}).join('')
+      +(soEmenta.length?`<section class="lugar"><h3>Outros pedidos que citam “${esc(qRua)}” na ementa</h3><ol class="lista" style="padding-left:20px;list-style:decimal">${soEmenta.map(p=>pedidoHTML(p)).join('')}</ol></section>`:'')
+      :`<div class="vazio">Nenhum pedido encontrado para “${esc(qRua)}”. Tente só uma parte do nome, como “Floresta” ou “Sanitária”.</div>`;
+  } else {
+    corpo=`<h3 style="margin:8px 0 6px">Pedidos que mais voltaram para o mesmo lugar</h3>
+    <p class="muted small" style="margin:0 0 8px">Mesmo tipo de pedido, mesmo lugar, em requerimentos ou indicações diferentes. Clique para ver datas, autores e cada pedido.</p>
+    ${LC.repeticoes.slice(0,25).map(r=>repHTML(r,P,false)).join('')}
+    <p class="muted small">${LC.repeticoes.length} combinações de lugar e tipo de pedido se repetem ao menos duas vezes; a lista mostra as 25 com mais repetições. Busque um lugar para ver todas as dele.</p>`;
+  }
+  $('#main').innerHTML=`<div class="wrap">
+  <h2>O que foi pedido para cada rua e bairro</h2>
+  <p class="muted" style="max-width:72ch">Digite uma rua, avenida, praça, bairro ou comunidade e veja todos os requerimentos e indicações dos vereadores que citam esse lugar, com data e autor.</p>
+  <div class="aviso" role="note"><b>Pedido repetido não prova que a Prefeitura ignorou o anterior.</b>Um pedido pode voltar porque o problema reapareceu depois de resolvido, porque foi atendido só em parte, porque outro vereador fez o mesmo pedido, ou porque a resposta ainda estava no prazo. Este site mostra só o que foi pedido; para saber o que a Prefeitura respondeu ou fez, é preciso consultar a resposta oficial.</div>
+  <form class="busca" id="f-rua" role="search"><label class="filtro" for="q-rua">Rua ou bairro<input id="q-rua" type="search" list="lista-lugares" value="${esc(qRua)}" placeholder="ex.: Floresta, Avenida Sanitária, Calciolândia" autocomplete="off"></label></form>
+  <datalist id="lista-lugares">${LC.lugares.map(l=>`<option value="${esc(l.nome)}">`).join('')}</datalist>
+  <div class="chips" aria-label="Lugares com mais pedidos">${LC.lugares.slice(0,14).map(l=>`<button type="button" data-lugar="${esc(l.nome)}">${esc(l.nome)}<b>${l.pedidos}</b></button>`).join('')}</div>
+  ${corpo}
+  <section class="regra" style="margin-top:40px;max-width:78ch"><h3>Como os lugares foram encontrados</h3>
+  <p class="small">Lemos a ementa e o texto completo (PDF) de ${LC.pedidos.length} requerimentos e indicações publicados no SAPL e marcamos todo trecho que começa com Rua, Avenida, Travessa, Praça, Bairro, Comunidade, Distrito, Residencial, Loteamento, Estrada, Rodovia ou Vila seguido de um nome. O endereço da própria Câmara, que aparece no cabeçalho dos documentos, é ignorado. ${LC.pedidos.filter(p=>p.locais.length).length} pedidos citam algum lugar; os outros falam da cidade toda ou de um lugar sem esses nomes (por exemplo, “estrada do Rastro de São Pedro”) e só aparecem pela busca na ementa.</p>
+  <p class="small">O tipo de pedido (limpeza, asfalto, iluminação, trânsito…) é definido pelas palavras da ementa, com a mesma regra para todos os autores. Perguntas à Prefeitura não entram na contagem de repetição. Quando o lugar aparece só no corpo do texto, e não na ementa, o pedido traz a marca “local citado só no texto”: a ligação pode ser mais fraca, como uma referência de passagem.</p></section>
+  </div>`;
+}
+
+function init(){
+  $('#atualizado').textContent=`Dados atualizados em ${dLonga(D.gerado_em)}.`;
+  $('#ver').innerHTML='<option value="">Todos</option>'+D.vereadores.map(n=>`<option${n===ver?' selected':''}>${esc(n)}</option>`).join('');
+  if(!D.vereadores.includes(ver)) ver='';
+  $('#semanas').innerHTML=D.sessoes.map(s=>`<a href="#sessao-${s.id}" data-id="${s.id}" class="${s.realizada?'':'prox'}">${dCurta(s.data)}${s.tipo&&s.tipo!=='Ordinária'?' · '+esc(s.tipo):''}${s.realizada?'':' · próxima'}${R[s.id]?' · vídeo resumido':''}</a>`).join('');
+  render();
+}
+
+let tRua;
+$('#main').addEventListener('submit',e=>{if(e.target.id==='f-rua'){e.preventDefault();qRua=$('#q-rua').value;renderRuas()}});
+$('#main').addEventListener('input',e=>{if(e.target.id==='q-rua'){clearTimeout(tRua);tRua=setTimeout(()=>{qRua=e.target.value;renderRuas();const i=$('#q-rua');i.focus();i.setSelectionRange(i.value.length,i.value.length)},300)}});
+$('#main').addEventListener('click',e=>{const b=e.target.closest('[data-lugar]');if(b){qRua=b.dataset.lugar;renderRuas();}});
+$('#main').addEventListener('change',e=>{
+  if(e.target.id==='f-aut'){fAut=e.target.value;renderPropostas()}
+  if(e.target.id==='f-ano'){fAno=e.target.value;renderPropostas()}
+});
+let tBusca;
+$('#main').addEventListener('input',e=>{if(e.target.id==='f-busca'){clearTimeout(tBusca);tBusca=setTimeout(()=>{fBusca=e.target.value;renderPropostas();const i=$('#f-busca');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)}});
+$('#main').addEventListener('click',e=>{
+  const m=e.target.closest('.mais');if(m){mostrando[m.dataset.k]=(mostrando[m.dataset.k]||LIMITE)+LIMITE;const y=scrollY;renderPropostas();scrollTo({top:y});return}
+  const a=e.target.closest('[data-aut]');if(a){fAut=a.dataset.aut;renderPropostas();scrollTo({top:0});return}
+  const b=e.target.closest('[data-abre]');if(b){e.preventDefault();const d=document.querySelector(`details.grupo[data-g="${b.dataset.abre}"]`);d.open=true;d.scrollIntoView({behavior:'smooth'})}
+});
+$('#ver').addEventListener('change',e=>{ver=e.target.value;try{localStorage.setItem('ver',ver)}catch(_){}render()});
+addEventListener('hashchange',()=>{render();if(location.hash!=='#regra')scrollTo({top:0})});
+
+// contador do salário pago aos vereadores desde a posse (1º/1/2025, horário de Brasília)
+const SUBSIDIO={2025:5740.52,2026:5964.40}, NVER=9, PAGAMENTOS_ANO=12+1+1/3; // 12 salários + 13º + 1/3 de férias
+const anoMax=Math.max(...Object.keys(SUBSIDIO).map(Number));
+const brl=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+const inicioAno=y=>Date.UTC(y,0,1,3);
+function pagoAte(ms){let t=0;for(let y=2025;ms>inicioAno(y);y++){const a=inicioAno(y),b=inicioAno(y+1);t+=(SUBSIDIO[y]??SUBSIDIO[anoMax])*NVER*PAGAMENTOS_ANO*Math.min(1,(ms-a)/(b-a))}return t}
+let tique=function(){const agora=Date.now();$('#contador').textContent=brl.format(pagoAte(agora));};
+// Despesas pagas pela Câmara (portal da transparência, unidade gestora CÂMARA MUNICIPAL, classificação institucional)
+const DESPESAS={pago2025:4522956.66, pago2026:4448474.66, ate:Date.UTC(2026,10,21,23,11,5)}; // até 21/11/2026 20:11 (Brasília)
+const ritmo2026=DESPESAS.pago2026/((DESPESAS.ate-inicioAno(2026))/1000); // R$ por segundo, média de 2026
+function despesasAte(ms){return DESPESAS.pago2025+DESPESAS.pago2026+Math.max(0,(ms-DESPESAS.ate)/1000)*ritmo2026}
+// Diárias pagas a vereadores (portal da transparência, Diárias/Passagens/Adiantamento de Viagem)
+const DIARIAS=[['Carlos',5588.87,7650],['Queijinho',5461.97,5150],['Didier',4128,2950],['Genorinho',3359.65,2950],['Leslie',924.26,3500],['Jaiane',1750,0],['Orlando',915.77,500],['Joãozinho',1159.65,250],['Kátia',0,0]];
+{const tot=DIARIAS.map(([n,a,b])=>[n,a+b]).sort((x,y)=>y[1]-x[1]),max=tot[0][1];
+ $('#lista-diarias').innerHTML=tot.map(([n,v])=>`<li class="${v?'':'zero'}"><span>${esc(n)}</span><span class="barra-d"><span style="width:${(100*v/max).toFixed(1)}%"></span></span><b>${brl.format(v)}</b></li>`).join('');}
+const tiqueOriginal=tique;
+tique=function(){tiqueOriginal();$('#contador-despesas').textContent=brl.format(despesasAte(Date.now()));};
+tique();const relogio=setInterval(tique,1000);
+
+Promise.all([fetch('data/sessoes.json').then(r=>r.json()),fetch('data/resumos.json').then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('data/propostas.json').then(r=>r.json()).catch(()=>null),fetch('data/locais.json').then(r=>r.json()).catch(()=>null)])
+.then(([d,r,p,l])=>{D=d;R=r||{};PR=p;LC=l;init()})
+.catch(()=>{$('#main').innerHTML='<div class="wrap vazio">Não foi possível carregar os dados.</div>'});
+}
+</script>
+</body>
+</html>

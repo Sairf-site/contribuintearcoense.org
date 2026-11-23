@@ -421,7 +421,8 @@ const tiqueOriginal=tique;
 tique=function(){tiqueOriginal();$('#contador-despesas').textContent=brl.format(despesasAte(Date.now()));};
 tique();const relogio=setInterval(tique,1000);
 
-Promise.all([fetch('data/sessoes.json').then(r=>r.json()),fetch('data/resumos.json').then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('data/propostas.json').then(r=>r.json()).catch(()=>null),fetch('data/locais.json').then(r=>r.json()).catch(()=>null)])
+const lerJSON=u=>fetch(u).then(r=>{if(!r.ok)throw new Error(r.status);return r.text()}).then(t=>JSON.parse(t.split('http://sapl.arcos.mg.leg.br').join('https://sapl.arcos.mg.leg.br')));
+Promise.all([lerJSON('data/sessoes.json'),lerJSON('data/resumos.json').catch(()=>({})),lerJSON('data/propostas.json').catch(()=>null),lerJSON('data/locais.json').catch(()=>null)])
 .then(([d,r,p,l])=>{D=d;R=r||{};PR=p;LC=l;init()})
 .catch(()=>{$('#main').innerHTML='<div class="wrap vazio">Não foi possível carregar os dados.</div>'});
 }
